@@ -5,13 +5,12 @@ import os
 app = Flask(__name__)
 CORS(app)
 
-# Load key whitelist
 if os.path.exists("allowkeys.txt"):
     with open("allowkeys.txt", "r", encoding="utf-8") as f:
         allowed_keys = set(line.strip() for line in f if line.strip())
 else:
     allowed_keys = set()
-    print("⚠️ Không tìm thấy allowkeys.txt — server vẫn chạy nhưng sẽ từ chối tất cả key.")
+    print("⚠️ Không tìm thấy allowkeys.txt — sẽ từ chối tất cả key.")
 
 @app.route("/")
 def home():
@@ -25,3 +24,6 @@ def serve_tool():
     if not os.path.exists("tool_obfuscated.js"):
         return "❌ tool_obfuscated.js không tồn tại!", 500
     return send_file("tool_obfuscated.js", mimetype="application/javascript")
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=10000)
