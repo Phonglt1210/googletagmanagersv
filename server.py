@@ -7,8 +7,10 @@ app = Flask(__name__)
 # Tải danh sách key từ file allowkey.txt
 def load_allowed_keys():
     try:
-        with open("allowkey.txt", "r") as f:
-            return [line.strip() for line in f if line.strip()]
+     with open("allowkeys.txt", "r", encoding="utf-8") as f:
+    allowed_keys = set(line.strip() for line in f if line.strip())
+
+
     except FileNotFoundError:
         return []
 
