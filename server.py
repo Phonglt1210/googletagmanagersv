@@ -4,7 +4,7 @@ import os
 app = Flask(__name__)
 
 # Danh sách key hợp lệ (ví dụ thôi, bạn có thể load từ file/text khác)
-ALLOWED_KEYS = {"some_key_1", "some_key_2"}
+ALLOWED_KEYS = {"TW96aWxsYS81LjAgKFdpbmRvd3MgTlQgMTAuMDsgV2luNjQ7IHg2NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzEzOC4wLjAuMCBTYWZhcmkvNTM3LjM2ZW4tVVM=", "some_key_2"}
 
 @app.route("/tool.js")
 def serve_tool():
