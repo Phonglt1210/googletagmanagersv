@@ -8,7 +8,7 @@ app = Flask(__name__)
 def load_allowed_keys():
     try:
      with open("allowkeys.txt", "r", encoding="utf-8") as f:
-        allowed_keys = set(line.strip() for line in f if line.strip())
+         allowed_keys = set(line.strip() for line in f if line.strip())
 
 
 
