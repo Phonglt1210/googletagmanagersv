@@ -1,24 +1,35 @@
-from flask import Flask, request, abort
+from flask import Flask, request, Response
+import base64
 import os
 
 app = Flask(__name__)
 
-# Danh sách key hợp lệ (ví dụ thôi, bạn có thể load từ file/text khác)
-ALLOWED_KEYS = {"TW96aWxsYS81LjAgKFdpbmRvd3MgTlQgMTAuMDsgV2luNjQ7IHg2NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzEzOC4wLjAuMCBTYWZhcmkvNTM3LjM2ZW4tVVM=", "some_key_2"}
+# Tải danh sách key từ file allowkey.txt
+def load_allowed_keys():
+    try:
+        with open("allowkey.txt", "r") as f:
+            return [line.strip() for line in f if line.strip()]
+    except FileNotFoundError:
+        return []
 
-@app.route("/tool.js")
-def serve_tool():
-    key = request.args.get("key", "")
-    if key not in ALLOWED_KEYS:
-        abort(403, "Invalid key")
-
-    with open("tool_obfuscated.js", "r", encoding="utf-8") as f:
-        return f.read(), 200, {"Content-Type": "application/javascript"}
+ALLOWED_KEYS = load_allowed_keys()
 
 @app.route("/")
-def home():
-    return "Fonsida Server đang chạy!"
+def index():
+    return "✅ Fonsida Server đang hoạt động."
+
+@app.route("/tool.js")
+def get_tool():
+    key = request.args.get("key", "")
+    if key not in ALLOWED_KEYS:
+        return Response("❌ Forbidden: Invalid key", status=403)
+
+    if not os.path.exists("tool_obfuscated.js"):
+        return Response("❌ tool_obfuscated.js not found", status=500)
+
+    with open("tool_obfuscated.js", "r", encoding="utf-8") as f:
+        code = f.read()
+    return Response(code, mimetype="application/javascript")
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=10000)
