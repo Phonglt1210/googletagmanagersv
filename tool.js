@@ -256,3 +256,4 @@
     createControlUI();
   });
 })();
+console.log("✅ [tool.js] Đã chạy hết script.");
