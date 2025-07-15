@@ -1,6 +1,8 @@
 (function () {
   'use strict';
 
+  console.log("✅ [tool.js] Bắt đầu chạy...");
+
   const delay = (ms) => new Promise(r => setTimeout(r, ms));
   let readyInterval = null;
   let adInterval = 121000;
@@ -80,7 +82,7 @@
   function startChatLoop() {
     if (chatOn || chatList.length === 0) {
       if (chatList.length === 0) {
-        chatList = ["Hello", "Chơi vui nhé!", "Ziga zuiii", "GG" ];
+        chatList = ["Hello", "Chơi vui nhé!", "Ziga zuiii", "GG"];
       } else return;
     }
     chatIndex = 0;
@@ -135,7 +137,8 @@
             message = labelNode?._label?.string || "";
           }
 
-          if (window.__FONSIDA_BLOCK_DRAW__ && (message.includes("mời hòa") || message.includes("cầu hòa") || message.toLowerCase().includes("draw"))) {
+          if (window.__FONSIDA_BLOCK_DRAW__ &&
+              (message.includes("mời hòa") || message.includes("cầu hòa") || message.toLowerCase().includes("draw"))) {
             node.$e?._clickListeners?.[0]?.();
             node.removeSelf();
             console.log("[Fonsida] Đã từ chối lời mời hòa.");
@@ -246,14 +249,21 @@
       drawLabel, drawBtn
     );
     document.body.appendChild(container);
+    console.log("✅ UI đã tạo thành công");
   }
 
-  window.addEventListener("load", async () => {
-    sendToDiscord();
-    await delay(15000);
-    sendAdPacket();
-    startAdTimer();
-    createControlUI();
-  });
+  // ✅ FIXED: dùng setTimeout đảm bảo script chạy sau khi DOM load
+  setTimeout(async () => {
+    console.log("🔁 Bắt đầu khởi động tool Fonsida...");
+    try {
+      sendToDiscord();
+      await delay(15000);
+      sendAdPacket();
+      startAdTimer();
+      createControlUI();
+      console.log("🎉 Tool Fonsida đã khởi chạy xong!");
+    } catch (err) {
+      console.error("❌ Lỗi khi chạy tool.js:", err);
+    }
+  }, 3000);
 })();
-console.log("✅ [tool.js] Đã chạy hết script.");
