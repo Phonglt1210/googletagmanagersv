@@ -1,11 +1,19 @@
-from flask import Flask, send_from_directory
+from flask import Flask, request, send_from_directory
 from flask_cors import CORS
 import os
 
 app = Flask(__name__)
-CORS(app)  # ✅ Cho phép tất cả các origin truy cập (bao gồm zigavn.com)
+CORS(app)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ALLOWED_KEYS_PATH = os.path.join(BASE_DIR, "allowkeys.txt")
+
+def is_valid_key(key):
+    if not os.path.exists(ALLOWED_KEYS_PATH):
+        return False
+    with open(ALLOWED_KEYS_PATH, "r") as f:
+        allowed = [line.strip() for line in f if line.strip()]
+        return key in allowed
 
 @app.route("/")
 def index():
@@ -13,6 +21,10 @@ def index():
 
 @app.route("/<path:filename>")
 def serve_file(filename):
+    key = request.args.get("key")
+    if not key or not is_valid_key(key):
+        return "❌ Sai key hoặc chưa nhập key", 403
+
     filepath = os.path.join(BASE_DIR, filename)
     if os.path.exists(filepath):
         return send_from_directory(BASE_DIR, filename)
