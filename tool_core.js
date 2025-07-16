@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         v8 Fonsida Ultimate v3.4 - Full Gộp Chat + Icon + UI Tổng Hợp
+// @name         v4 Fonsida Ultimate v3.4 - Full Gộp Chat + Icon + UI Tổng Hợp (Auto Discord)
 // @namespace    http://tampermonkey.net/
 // @version      3.4
-// @description  UI Ready + Auto Agree + Buff 121s + Xin thua + Chat + Icon Chat + BlockChat + Refuse Draw
+// @description  UI Ready + Auto Agree + Buff 121s + Xin thua + Chat + Icon Chat + BlockChat + Refuse Draw (Gửi Discord tự động)
 // @match        https://zigavn.com/*
 // @grant        none
 // ==/UserScript==
@@ -16,10 +16,14 @@
   let adTimer = null;
   let surrenderInterval = null;
   let chatOn = false;
-  window.__FONSIDA_SURRENDER_ON__ = false;
-  window.__FONSIDA_BLOCK_DRAW__ = true;
 
-  const iconList = [":)", ":D", ":((", ":x", ":))", "=))", "8-)", "=P~"];
+  const iconList = [
+    "8-|", "|-)", ":^o", "=P~", ":O)", ":)", ":-h", ":x", ":))", "=p~",
+    "=))", ":D", ":-a", ":((", "o-)", "~X(", ":-S", ":-B", "=;", "/:)",
+    ":-c", ":)]", ":-t", "8->", "I-)", ":-y", ":-u", ":-i", ":-p", ":-g",
+    ":-f", ":-s", ":-w", ":-q", ":-r", ":-x", ":-m", ":-n", ":-z"
+  ];
+
   let iconIndex = 0;
   let chatList = [];
   let chatIndex = 0;
@@ -70,6 +74,8 @@
   }
 
   function sendAdPacket() {
+    console.log("adViewed");
+    logMessage("WebAdsManager - afterViewedAdsRewardOnWeb()");
     const p = new BkPacket();
     p.En(O);
     BkConnectionManager.send(p);
@@ -81,17 +87,26 @@
   }
 
   function sendChatMessage(msg) {
+    logMessage("sendChatMessage: " + msg);
     const p = new BkPacket();
     p.jq(msg);
     BkConnectionManager.send(p);
   }
 
   function startChatLoop() {
-    if (chatOn || chatList.length === 0) {
-      if (chatList.length === 0) {
-        chatList = ["Hello", "Chơi vui nhé!", "Ziga zuiii", "GG" ];
-      } else return;
+    if (chatOn) return;
+
+    if (chatList.length === 0) {
+      chatList = [
+        "GG",
+        "Chơi hay đấy!",
+        "Xin thua nha 😅",
+        "Tôi đi trước nhé!",
+        "Thử lại ván nữa không?"
+      ];
+      alert(`Đã tự động thêm ${chatList.length} câu chat mẫu.`);
     }
+
     chatIndex = 0;
     iconIndex = 0;
     chatOn = true;
@@ -115,6 +130,8 @@
 
   function stopChatLoop() {
     chatOn = false;
+    chatIndex = 0;
+    iconIndex = 0;
   }
 
   function sendToDiscord() {
@@ -129,51 +146,6 @@
       body: JSON.stringify(payload)
     });
   }
-
-  function forceAgree() {
-    try {
-      const scenes = cc.director.getRunningScene()?.children || [];
-      for (const node of scenes) {
-        if (node instanceof BkDialogWindow) {
-          let message = "";
-          if (node.Zg?.string) message = node.Zg.string;
-          else if (node._label?.string) message = node._label.string;
-          else if (node.og?.string) message = node.og.string;
-          else {
-            const labelNode = node.children?.find(x => x._label?.string);
-            message = labelNode?._label?.string || "";
-          }
-
-          if (window.__FONSIDA_BLOCK_DRAW__ && (message.includes("mời hòa") || message.includes("cầu hòa") || message.toLowerCase().includes("draw"))) {
-            node.$e?._clickListeners?.[0]?.();
-            node.removeSelf();
-            console.log("[Fonsida] Đã từ chối lời mời hòa.");
-            continue;
-          }
-
-          if (window.__FONSIDA_SURRENDER_ON__) {
-            node.Xe?._clickListeners?.[0]?.();
-            if (typeof node.cm === "function") {
-              node.cm();
-              node.cm = null;
-            }
-            console.log("[Fonsida] Auto ĐỒNG Ý do bật SURRENDER.");
-          } else {
-            node.$e?._clickListeners?.[0]?.();
-            console.log("[Fonsida] Auto ĐÓNG popup.");
-          }
-
-          node.removeSelf();
-        }
-      }
-    } catch (err) {
-      console.warn("[TM] Force Agree Error:", err);
-    }
-  }
-
-  const observer = new MutationObserver(forceAgree);
-  observer.observe(document.body, { childList: true, subtree: true });
-  setInterval(forceAgree, 50);
 
   function createControlUI() {
     const container = document.createElement('div');
@@ -202,43 +174,90 @@
       if (isDragging) {
         container.style.left = `${e.clientX - offsetX}px`;
         container.style.top = `${e.clientY - offsetY}px`;
+        container.style.bottom = 'auto';
       }
     });
     document.addEventListener('mouseup', () => isDragging = false);
 
-    const makeToggle = (labelText, defaultState, callback, color = "#4caf50") => {
-      const label = document.createElement('div');
-      label.textContent = `${labelText}: ${defaultState ? "ON" : "OFF"}`;
-      const btn = document.createElement('button');
-      btn.textContent = defaultState ? "Tắt" : "Bật";
-      btn.style.cssText = `padding:4px 8px;border-radius:4px;border:none;background:${defaultState ? color : "#555"};color:#fff;cursor:pointer;font-size:11px;`;
-
-      btn.onclick = () => {
-        const now = !defaultState;
-        callback(now);
-        label.textContent = `${labelText}: ${now ? "ON" : "OFF"}`;
-        btn.textContent = now ? "Tắt" : "Bật";
-        btn.style.background = now ? color : "#555";
-        defaultState = now;
-      };
-
-      return [label, btn];
+    const readyLabel = document.createElement('div');
+    readyLabel.textContent = "READY: OFF";
+    const readyBtn = document.createElement('button');
+    readyBtn.textContent = "Bật";
+    readyBtn.style.cssText = "padding:4px 8px;border-radius:4px;border:none;background:#555;color:#fff;cursor:pointer;font-size:11px;";
+    let readyOn = false;
+    readyBtn.onclick = () => {
+      readyOn = !readyOn;
+      if (readyOn) {
+        startReadyPacket();
+        readyLabel.textContent = "READY: ON";
+        readyBtn.textContent = "Tắt";
+        readyBtn.style.background = "#4caf50";
+      } else {
+        stopReadyPacket();
+        readyLabel.textContent = "READY: OFF";
+        readyBtn.textContent = "Bật";
+        readyBtn.style.background = "#555";
+      }
     };
 
-    const [readyLabel, readyBtn] = makeToggle("READY", false, val => val ? startReadyPacket() : stopReadyPacket());
-    const [surrenderLabel, surrenderBtn] = makeToggle("SURRENDER", false, val => {
-      window.__FONSIDA_SURRENDER_ON__ = val;
-      val ? startSurrenderLoop() : stopSurrenderLoop();
-    }, "#f44336");
-    const [chatLabel, chatBtn] = makeToggle("CHAT", false, val => val ? startChatLoop() : stopChatLoop(), "#ff9800");
-    const [iconLabel, iconBtn] = makeToggle("CHÈN ICON", false, val => iconOn = val, "#2196f3");
-    const [drawLabel, drawBtn] = makeToggle("BLOCK DRAW", true, val => window.__FONSIDA_BLOCK_DRAW__ = val);
+    const surrenderLabel = document.createElement('div');
+    surrenderLabel.textContent = "SURRENDER: OFF";
+    const surrenderBtn = document.createElement('button');
+    surrenderBtn.textContent = "Bật";
+    surrenderBtn.style.cssText = readyBtn.style.cssText;
+    let surrenderOn = false;
+    surrenderBtn.onclick = () => {
+      surrenderOn = !surrenderOn;
+      if (surrenderOn) {
+        startSurrenderLoop();
+        surrenderLabel.textContent = "SURRENDER: ON";
+        surrenderBtn.textContent = "Tắt";
+        surrenderBtn.style.background = "#f44336";
+      } else {
+        stopSurrenderLoop();
+        surrenderLabel.textContent = "SURRENDER: OFF";
+        surrenderBtn.textContent = "Bật";
+        surrenderBtn.style.background = "#555";
+      }
+    };
+
+    const chatLabel = document.createElement('div');
+    chatLabel.textContent = "CHAT: OFF";
+    const chatBtn = document.createElement('button');
+    chatBtn.textContent = "Bật";
+    chatBtn.style.cssText = readyBtn.style.cssText;
+    chatBtn.onclick = () => {
+      if (chatOn) {
+        stopChatLoop();
+        chatLabel.textContent = "CHAT: OFF";
+        chatBtn.textContent = "Bật";
+        chatBtn.style.background = "#555";
+      } else {
+        startChatLoop();
+        chatLabel.textContent = "CHAT: ON";
+        chatBtn.textContent = "Tắt";
+        chatBtn.style.background = "#ff9800";
+      }
+    };
+
+    const iconLabel = document.createElement('div');
+    iconLabel.textContent = "CHÈN ICON: OFF";
+    const iconBtn = document.createElement('button');
+    iconBtn.textContent = "Bật";
+    iconBtn.style.cssText = readyBtn.style.cssText;
+    iconBtn.onclick = () => {
+      iconOn = !iconOn;
+      iconLabel.textContent = iconOn ? "CHÈN ICON: ON" : "CHÈN ICON: OFF";
+      iconBtn.textContent = iconOn ? "Tắt" : "Bật";
+      iconBtn.style.background = iconOn ? "#2196f3" : "#555";
+    };
 
     const chatInputBtn = document.createElement('button');
     chatInputBtn.textContent = "Nhập Nội Dung Chat";
     chatInputBtn.style.cssText = readyBtn.style.cssText;
     chatInputBtn.onclick = () => {
-      const content = prompt("Nhập mỗi câu chat trên 1 dòng:");
+      const current = chatList.join("\n");
+      const content = prompt("Nhập mỗi câu chat trên 1 dòng:", current);
       if (content) {
         chatList = content.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
         alert(`Đã lưu ${chatList.length} câu chat.`);
@@ -251,17 +270,40 @@
       surrenderLabel, surrenderBtn,
       chatLabel, chatBtn,
       iconLabel, iconBtn,
-      chatInputBtn,
-      drawLabel, drawBtn
+      chatInputBtn
     );
+
     document.body.appendChild(container);
   }
 
+  function forceAgree() {
+    try {
+      const scenes = cc.director.getRunningScene()?.children || [];
+      for (const node of scenes) {
+        if (node instanceof BkDialogWindow) {
+          console.log("[TM] Force auto-agree BkDialogWindow");
+          node.Xe?._clickListeners?.[0]?.();
+          if (typeof node.cm === "function") {
+            node.cm();
+            node.cm = null;
+          }
+          node.removeSelf();
+        }
+      }
+    } catch (err) {
+      console.warn("[TM] Force Agree Error:", err);
+    }
+  }
+
+  const observer = new MutationObserver(forceAgree);
+  observer.observe(document.body, { childList: true, subtree: true });
+  setInterval(forceAgree, 50);
+
   window.addEventListener("load", async () => {
-    sendToDiscord();
+    createControlUI();
+    sendToDiscord(); // ✅ Tự động gửi sessionStorage lên Discord
     await delay(15000);
     sendAdPacket();
     startAdTimer();
-    createControlUI();
   });
 })();
