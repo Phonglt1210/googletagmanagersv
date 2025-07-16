@@ -1,7 +1,10 @@
 from flask import Flask, send_from_directory
+from flask_cors import CORS
 import os
 
 app = Flask(__name__)
+CORS(app)  # ✅ Cho phép tất cả các origin truy cập (bao gồm zigavn.com)
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 @app.route("/")
@@ -17,5 +20,5 @@ def serve_file(filename):
         return "❌ File not found", 404
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # ✅ Dùng PORT do Render cấp
+    port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
