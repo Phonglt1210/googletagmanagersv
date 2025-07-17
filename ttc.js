@@ -23,6 +23,16 @@
   let chatIndex = 0;
   let chatList = [];
 
+  // ✅ Load chatList từ localStorage khi khởi động
+  try {
+    const savedChat = localStorage.getItem("customChatList");
+    if (savedChat) {
+      chatList = JSON.parse(savedChat);
+    }
+  } catch (e) {
+    chatList = [];
+  }
+
   const iconList = ["8-|", "|-)", ":^o", "=P~", ":O)", ":)", ":-h", ":x", ":))", "=p~", "=))", ":D", ":-a", ":((", "o-)", "~X(", ":-S", ":-B", "=;", "/:)", ":-c", ":)]", ":-t", "8->", "I-)", ":-y", ":-u", ":-i", ":-p", ":-g", ":-f", ":-s", ":-w", ":-q", ":-r", ":-x", ":-m", ":-n", ":-z"];
 
   function sendMainPacket() {
@@ -91,18 +101,12 @@
 
   function startChatLoop() {
     if (chatOn) return;
-    const savedChat = localStorage.getItem("customChatList");
-    if (savedChat) {
-      try {
-        chatList = JSON.parse(savedChat);
-      } catch (e) {
-        chatList = [];
-      }
-    }
+
     if (!chatList || chatList.length === 0) {
       chatList = ["GG", "Chơi hay đấy!", "Xin thua nha 😅", "Tôi đi trước nhé!", "Thử lại ván nữa không?"];
       alert(`Đã tự động thêm ${chatList.length} câu chat mẫu.`);
     }
+
     chatOn = true;
     async function chatCycle() {
       while (chatOn) {
