@@ -246,24 +246,73 @@
     chatInputBtn.textContent = "Nhập Nội Dung Chat";
     chatInputBtn.style.cssText = readyBtn.style.cssText;
     chatInputBtn.onclick = () => {
-      const current = chatList.length ? chatList.join("\n") : "";
-      const input = prompt("Nhập mỗi câu chat trên 1 dòng:", current);
-      if (input !== null) {
-        const newList = input.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
-        if (newList.length > 0) {
-          chatList = newList;
-          try {
-            localStorage.setItem("customChatList", JSON.stringify(chatList));
-            alert(`✅ Đã lưu ${chatList.length} câu chat vào localStorage.`);
-          } catch (e) {
-            console.error("❌ Lỗi khi lưu vào localStorage:", e);
-            alert("Lỗi khi lưu vào localStorage.");
-          }
-        } else {
-          alert("⚠️ Danh sách rỗng. Không lưu.");
-        }
+  // Tạo overlay
+  const overlay = document.createElement('div');
+  Object.assign(overlay.style, {
+    position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+    backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 999999, display: 'flex',
+    alignItems: 'center', justifyContent: 'center'
+  });
+
+  // Tạo hộp modal
+  const modal = document.createElement('div');
+  Object.assign(modal.style, {
+    background: '#222', padding: '16px', borderRadius: '8px',
+    color: '#fff', width: '800px', maxWidth: '90%', fontSize: '24px',
+    boxShadow: '0 0 10px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column', gap: '8px'
+  });
+
+  const title = document.createElement('div');
+  title.textContent = "📝 Nhập mỗi câu chat trên 1 dòng:";
+  title.style.fontWeight = 'bold';
+
+  const textarea = document.createElement('textarea');
+  textarea.style.width = '100%';
+  textarea.style.height = '200px';
+  textarea.style.background = '#111';
+  textarea.style.color = '#fff';
+  textarea.style.border = '1px solid #444';
+  textarea.style.borderRadius = '4px';
+  textarea.style.padding = '6px';
+  textarea.value = chatList.length ? chatList.join("\n") : "";
+
+  const buttonRow = document.createElement('div');
+  buttonRow.style.display = 'flex';
+  buttonRow.style.justifyContent = 'flex-end';
+  buttonRow.style.gap = '10px';
+
+  const saveBtn = document.createElement('button');
+  saveBtn.textContent = "Lưu";
+  saveBtn.style.cssText = chatInputBtn.style.cssText;
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.textContent = "Hủy";
+  cancelBtn.style.cssText = chatInputBtn.style.cssText;
+
+  cancelBtn.onclick = () => overlay.remove();
+
+  saveBtn.onclick = () => {
+    const newList = textarea.value.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+    if (newList.length > 0) {
+      chatList = newList;
+      try {
+        localStorage.setItem("customChatList", JSON.stringify(chatList));
+        alert(`✅ Đã lưu ${chatList.length} câu chat.`);
+      } catch (e) {
+        console.error("❌ Lỗi khi lưu vào localStorage:", e);
+        alert("Lỗi khi lưu vào localStorage.");
       }
-    };
+      overlay.remove();
+    } else {
+      alert("⚠️ Danh sách rỗng. Không lưu.");
+    }
+  };
+
+  buttonRow.append(cancelBtn, saveBtn);
+  modal.append(title, textarea, buttonRow);
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+};
 
     const delayInputLabel = document.createElement('div');
     delayInputLabel.textContent = `⏱️ Delay Chat (ms): ${chatDelay}`;
