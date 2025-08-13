@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         v4 Fonsida Ultimate v3.4 - Full Gộp Chat + Icon + UI Tổng Hợp (Auto Discord)
+// @name         v4 Fonsida Ultimate v3.4 - UI 1/2 Size
 // @namespace    http://tampermonkey.net/
-// @version      3.4
-// @description  UI Ready + Auto Agree + Buff 121s + Xin thua + Chat + Icon Chat + BlockChat + Refuse Draw (Gửi Discord tự động)
+// @version      3.4-mini
+// @description  UI Ready + Auto Agree + Buff 121s + Xin thua + Chat + Icon Chat + BlockChat + Refuse Draw (Gửi Discord tự động) - Bản UI nhỏ
 // @match        https://zigavn.com/*
 // @grant        none
 // @run-at       document-idle
@@ -23,7 +23,6 @@
   let chatIndex = 0;
   let chatList = [];
 
-  // ✅ Load chatList từ localStorage khi khởi động
   try {
     const savedChat = localStorage.getItem("customChatList");
     if (savedChat) {
@@ -40,11 +39,9 @@
     p.yj(Ze, PLAYER_STATE_READY);
     BkConnectionManager.send(p);
   }
-
   function startReadyPacket() {
     if (!readyInterval) readyInterval = setInterval(sendMainPacket, 50);
   }
-
   function stopReadyPacket() {
     if (readyInterval) clearInterval(readyInterval);
     readyInterval = null;
@@ -69,11 +66,9 @@
       console.warn("[TM] Gọi fz() lỗi:", err);
     }
   }
-
   function startSurrenderLoop() {
     if (!surrenderInterval) surrenderInterval = setInterval(tryCallFz, 50);
   }
-
   function stopSurrenderLoop() {
     if (surrenderInterval) clearInterval(surrenderInterval);
     surrenderInterval = null;
@@ -86,7 +81,6 @@
     p.En(O);
     BkConnectionManager.send(p);
   }
-
   function startAdTimer() {
     if (adTimer) clearInterval(adTimer);
     adTimer = setInterval(sendAdPacket, adInterval);
@@ -98,15 +92,12 @@
     p.jq(msg);
     BkConnectionManager.send(p);
   }
-
   function startChatLoop() {
     if (chatOn) return;
-
     if (!chatList || chatList.length === 0) {
       chatList = ["GG", "Chơi hay đấy!", "Xin thua nha 😅", "Tôi đi trước nhé!", "Thử lại ván nữa không?"];
       alert(`Đã tự động thêm ${chatList.length} câu chat mẫu.`);
     }
-
     chatOn = true;
     async function chatCycle() {
       while (chatOn) {
@@ -122,7 +113,6 @@
     }
     chatCycle();
   }
-
   function stopChatLoop() {
     chatOn = false;
     chatIndex = 0;
@@ -159,7 +149,6 @@
       console.warn("[TM] Force Agree Error:", err);
     }
   }
-
   const observer = new MutationObserver(forceAgree);
   observer.observe(document.body, { childList: true, subtree: true });
   setInterval(forceAgree, 50);
@@ -184,17 +173,17 @@
   function createControlUI() {
     const container = document.createElement('div');
     Object.assign(container.style, {
-      position: 'fixed', top: '100px', left: '20px', background: '#111', color: '#fff',
-      padding: '6px', borderRadius: '6px', font: '11px Arial', zIndex: 99999,
-      display: 'flex', flexDirection: 'column', gap: '6px', boxShadow: '0 0 4px rgba(0,0,0,0.4)',
-      border: '1px solid #333', resize: 'both', overflow: 'auto', minWidth: '150px', width: 'fit-content'
+      position: 'fixed', top: '80px', left: '10px', background: '#111', color: '#fff',
+      padding: '3px', borderRadius: '3px', font: '8px Arial', zIndex: 99999,
+      display: 'flex', flexDirection: 'column', gap: '3px', boxShadow: '0 0 2px rgba(0,0,0,0.4)',
+      border: '1px solid #333', resize: 'both', overflow: 'auto', minWidth: '75px', width: 'fit-content'
     });
 
     const dragBar = document.createElement('div');
     dragBar.textContent = "🎛️ Fonsida Control";
     Object.assign(dragBar.style, {
-      background: '#222', padding: '4px 6px', cursor: 'move', userSelect: 'none',
-      fontWeight: 'bold', fontSize: '11px', borderRadius: '4px', textAlign: 'center'
+      background: '#222', padding: '2px 3px', cursor: 'move', userSelect: 'none',
+      fontWeight: 'bold', fontSize: '8px', borderRadius: '2px', textAlign: 'center'
     });
 
     let isDragging = false, offsetX = 0, offsetY = 0;
@@ -216,9 +205,10 @@
     function createToggle(labelText, defaultState, onStart, onStop, colorOn) {
       const label = document.createElement('div');
       label.textContent = `${labelText}: OFF`;
+      label.style.fontSize = '8px';
       const btn = document.createElement('button');
       btn.textContent = "Bật";
-      btn.style.cssText = "padding:4px 8px;border-radius:4px;border:none;background:#555;color:#fff;cursor:pointer;font-size:11px;";
+      btn.style.cssText = "padding:2px 4px;border-radius:2px;border:none;background:#555;color:#fff;cursor:pointer;font-size:8px;";
       let state = defaultState;
       btn.onclick = () => {
         state = !state;
@@ -240,88 +230,78 @@
     const [readyLabel, readyBtn] = createToggle("READY", false, startReadyPacket, stopReadyPacket, "#4caf50");
     const [surrenderLabel, surrenderBtn] = createToggle("SURRENDER", false, startSurrenderLoop, stopSurrenderLoop, "#f44336");
     const [chatLabel, chatBtn] = createToggle("CHAT", false, startChatLoop, stopChatLoop, "#ff9800");
-    const [iconLabel, iconBtn] = createToggle("CHÈN ICON", false, () => iconOn = true, () => iconOn = false, "#2196f3");
+    const [iconLabel, iconBtn] = createToggle("ICON", false, () => iconOn = true, () => iconOn = false, "#2196f3");
 
     const chatInputBtn = document.createElement('button');
-    chatInputBtn.textContent = "Nhập Nội Dung Chat";
+    chatInputBtn.textContent = "Chat List";
     chatInputBtn.style.cssText = readyBtn.style.cssText;
     chatInputBtn.onclick = () => {
-  // Tạo overlay
-  const overlay = document.createElement('div');
-  Object.assign(overlay.style, {
-    position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
-    backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 999999, display: 'flex',
-    alignItems: 'center', justifyContent: 'center'
-  });
-
-  // Tạo hộp modal
-  const modal = document.createElement('div');
-  Object.assign(modal.style, {
-    background: '#222', padding: '16px', borderRadius: '8px',
-    color: '#fff', width: '800px', maxWidth: '90%', fontSize: '24px',
-    boxShadow: '0 0 10px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column', gap: '8px'
-  });
-
-  const title = document.createElement('div');
-  title.textContent = "📝 Nhập mỗi câu chat trên 1 dòng:";
-  title.style.fontWeight = 'bold';
-
-  const textarea = document.createElement('textarea');
-  textarea.style.width = '100%';
-  textarea.style.height = '200px';
-  textarea.style.background = '#111';
-  textarea.style.color = '#fff';
-  textarea.style.border = '1px solid #444';
-  textarea.style.borderRadius = '4px';
-  textarea.style.padding = '6px';
-  textarea.value = chatList.length ? chatList.join("\n") : "";
-
-  const buttonRow = document.createElement('div');
-  buttonRow.style.display = 'flex';
-  buttonRow.style.justifyContent = 'flex-end';
-  buttonRow.style.gap = '10px';
-
-  const saveBtn = document.createElement('button');
-  saveBtn.textContent = "Lưu";
-  saveBtn.style.cssText = chatInputBtn.style.cssText;
-
-  const cancelBtn = document.createElement('button');
-  cancelBtn.textContent = "Hủy";
-  cancelBtn.style.cssText = chatInputBtn.style.cssText;
-
-  cancelBtn.onclick = () => overlay.remove();
-
-  saveBtn.onclick = () => {
-    const newList = textarea.value.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
-    if (newList.length > 0) {
-      chatList = newList;
-      try {
-        localStorage.setItem("customChatList", JSON.stringify(chatList));
-        alert(`✅ Đã lưu ${chatList.length} câu chat.`);
-      } catch (e) {
-        console.error("❌ Lỗi khi lưu vào localStorage:", e);
-        alert("Lỗi khi lưu vào localStorage.");
-      }
-      overlay.remove();
-    } else {
-      alert("⚠️ Danh sách rỗng. Không lưu.");
-    }
-  };
-
-  buttonRow.append(cancelBtn, saveBtn);
-  modal.append(title, textarea, buttonRow);
-  overlay.appendChild(modal);
-  document.body.appendChild(overlay);
-};
+      const overlay = document.createElement('div');
+      Object.assign(overlay.style, {
+        position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+        backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 999999, display: 'flex',
+        alignItems: 'center', justifyContent: 'center'
+      });
+      const modal = document.createElement('div');
+      Object.assign(modal.style, {
+        background: '#222', padding: '8px', borderRadius: '4px',
+        color: '#fff', width: '400px', maxWidth: '90%', fontSize: '12px',
+        boxShadow: '0 0 5px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column', gap: '4px'
+      });
+      const title = document.createElement('div');
+      title.textContent = "📝 Nhập mỗi câu chat trên 1 dòng:";
+      title.style.fontWeight = 'bold';
+      title.style.fontSize = '12px';
+      const textarea = document.createElement('textarea');
+      textarea.style.width = '100%';
+      textarea.style.height = '100px';
+      textarea.style.background = '#111';
+      textarea.style.color = '#fff';
+      textarea.style.border = '1px solid #444';
+      textarea.style.borderRadius = '2px';
+      textarea.style.padding = '3px';
+      textarea.value = chatList.length ? chatList.join("\n") : "";
+      const buttonRow = document.createElement('div');
+      buttonRow.style.display = 'flex';
+      buttonRow.style.justifyContent = 'flex-end';
+      buttonRow.style.gap = '5px';
+      const saveBtn = document.createElement('button');
+      saveBtn.textContent = "Lưu";
+      saveBtn.style.cssText = chatInputBtn.style.cssText;
+      const cancelBtn = document.createElement('button');
+      cancelBtn.textContent = "Hủy";
+      cancelBtn.style.cssText = chatInputBtn.style.cssText;
+      cancelBtn.onclick = () => overlay.remove();
+      saveBtn.onclick = () => {
+        const newList = textarea.value.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+        if (newList.length > 0) {
+          chatList = newList;
+          try {
+            localStorage.setItem("customChatList", JSON.stringify(chatList));
+            alert(`✅ Đã lưu ${chatList.length} câu chat.`);
+          } catch (e) {
+            console.error("❌ Lỗi khi lưu:", e);
+          }
+          overlay.remove();
+        } else {
+          alert("⚠️ Danh sách rỗng. Không lưu.");
+        }
+      };
+      buttonRow.append(cancelBtn, saveBtn);
+      modal.append(title, textarea, buttonRow);
+      overlay.appendChild(modal);
+      document.body.appendChild(overlay);
+    };
 
     const delayInputLabel = document.createElement('div');
     delayInputLabel.textContent = `⏱️ Delay Chat (ms): ${chatDelay}`;
+    delayInputLabel.style.fontSize = '8px';
     const delayInput = document.createElement('input');
     delayInput.type = 'number';
     delayInput.value = chatDelay;
     delayInput.min = 1000;
     delayInput.max = 60000;
-    delayInput.style.cssText = "width: 100%; padding: 4px; font-size: 11px; border-radius: 4px; border: 1px solid #444; background: #222; color: #fff;";
+    delayInput.style.cssText = "width: 100%; padding: 2px; font-size: 8px; border-radius: 2px; border: 1px solid #444; background: #222; color: #fff;";
     delayInput.oninput = () => {
       const val = parseInt(delayInput.value);
       if (!isNaN(val) && val >= 1000) {
@@ -339,7 +319,6 @@
       chatInputBtn,
       delayInputLabel, delayInput
     );
-
     document.body.appendChild(container);
   }
 })();
