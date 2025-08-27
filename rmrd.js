@@ -1,36 +1,32 @@
 // ==UserScript==
-// @name         Chặn toast "Đối phương đã từ chối hòa" & "Đến lượt bạn"
+// @name         Chặn toast "Đến lượt bạn"
 // @namespace    http://tampermonkey.net/
-// @version      1.1
-// @description  Chỉ chặn toast "Đối phương đã từ chối hòa" và "Đến lượt bạn" mà vẫn giữ nguyên logic web/game
+// @version      1.3
+// @description  Chỉ chặn toast "Đến lượt bạn", các thông báo khác vẫn giữ nguyên
 // @author       You
 // @match        https://zigavn.com/*
-// @grant        unsafeWindow
+// @grant        none
 // ==/UserScript==
 
 (function() {
     'use strict';
 
     window.addEventListener('load', () => {
-        const originalShowToast = unsafeWindow.showToastMessage;
+        const originalShowToast = window.showToastMessage;
 
         if (!originalShowToast) {
             console.warn("Không tìm thấy showToastMessage trên window");
             return;
         }
 
-        // Ghi đè hàm showToastMessage
-        unsafeWindow.showToastMessage = function(msg, ...args) {
-            // Chặn hai thông báo
-            if (msg && (msg.includes("\u0110\u1ed1i ph\u01b0\u01a1ng \u0111\u00e3 t\u1eeb ch\u1ed1i h\u00f2a") ||
-                        msg.includes("\u0110\u1ebfn l\u01b0\u1ee3t b\u1ea1n"))) {
-                console.log("⚠️ Toast bị chặn:", msg);
-                return; // không hiển thị toast
+        window.showToastMessage = function(msg, ...args) {
+            if (msg && msg.includes("Đến lượt bạn")) {
+                console.log("⚠️ Toast 'Đến lượt bạn' bị chặn:", msg);
+                return;
             }
-            // Các thông báo khác vẫn hiển thị bình thường
             return originalShowToast(msg, ...args);
         };
 
-        console.log("✅ Script chặn toast 'Đối phương đã từ chối hòa' và 'Đến lượt bạn' đã sẵn sàng.");
+        console.log("✅ Script chặn toast 'Đến lượt bạn' đã sẵn sàng.");
     });
 })();
