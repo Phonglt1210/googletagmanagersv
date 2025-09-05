@@ -93,7 +93,7 @@
       while (chatOn) {
         sendChatMessage(chatList[chatIndex]);
         chatIndex = (chatIndex + 1) % chatList.length;
-        await delay(4000);
+        await delay(15000);
 
         if (iconOn) {
           sendChatMessage(iconList[iconIndex]);
