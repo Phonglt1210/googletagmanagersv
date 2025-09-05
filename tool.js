@@ -98,7 +98,7 @@
         if (iconOn) {
           sendChatMessage(iconList[iconIndex]);
           iconIndex = (iconIndex + 1) % iconList.length;
-          await delay(4000);
+          await delay(15000);
         }
       }
     }
