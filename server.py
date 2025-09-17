@@ -8,16 +8,18 @@ CORS(app)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ALLOWED_KEYS_PATH = os.path.join(BASE_DIR, "allowkeys.txt")
 
-def is_valid(key, finger, profile):
+def is_valid_key(finger, profile):
     if not os.path.exists(ALLOWED_KEYS_PATH):
         return False
     with open(ALLOWED_KEYS_PATH, "r") as f:
-        allowed = [line.strip().split("|") for line in f if line.strip()]
+        allowed = [line.strip() for line in f if line.strip()]
         for entry in allowed:
-            if len(entry) == 3:
-                k, fgr, prf = entry
-                if k == key and fgr == finger and prf == profile:
+            try:
+                saved_finger, saved_profile = entry.split("|", 1)
+                if finger == saved_finger and profile == saved_profile:
                     return True
+            except ValueError:
+                continue
     return False
 
 @app.route("/")
@@ -26,15 +28,11 @@ def index():
 
 @app.route("/<path:filename>")
 def serve_file(filename):
-    key = request.args.get("key")
-    finger = request.args.get("finger")
-    profile = request.args.get("profile")
+    finger = request.args.get("key")       # key = fingerprint
+    profile = request.args.get("profile")  # thêm profile
 
-    if not key or not finger or not profile:
-        return "❌ Thiếu tham số key/finger/profile", 400
-
-    if not is_valid(key, finger, profile):
-        return "❌ Key, finger hoặc profile không hợp lệ", 403
+    if not finger or not profile or not is_valid_key(finger, profile):
+        return "❌ Sai key hoặc profile không hợp lệ", 403
 
     filepath = os.path.join(BASE_DIR, filename)
     if os.path.exists(filepath):
