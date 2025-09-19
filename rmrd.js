@@ -2,7 +2,7 @@
 // @name         Chặn toast "Đến lượt bạn"
 // @namespace    http://tampermonkey.net/
 // @version      1.3
-// @description  Chỉ chặn toast "Đến lượt bạn", các thông báo khác vẫn giữ nguyên
+// @description  Chỉ chặn toast "Đến lượt bạn"
 // @author       You
 // @match        https://zigavn.com/*
 // @grant        none
