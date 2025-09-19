@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         ret
+// @name         atjr
 // @namespace    http://tampermonkey.net/
 // @version      1.0
 // @description  J R
