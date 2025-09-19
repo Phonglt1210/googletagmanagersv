@@ -2,7 +2,7 @@
 // @name         ret
 // @namespace    http://tampermonkey.net/
 // @version      1.0
-// @description  rtyrty
+// @description  J R
 // @author       FonArt
 // @match        *://zigavn.com/*
 // @grant        none
@@ -13,7 +13,7 @@
 
     let inGame = false;
 
-    // Hook logMessage để phát hiện vào/thoát bàn
+    //
     const originalLogMessage = window.logMessage;
     window.logMessage = function (msg) {
         if (msg.includes("ProcessGameTableInfo")) {
@@ -27,7 +27,7 @@
         return originalLogMessage.apply(this, arguments);
     };
 
-    // Hàm tự động click khi không ở trong bàn
+    // 
     function autoClickWhenIdle() {
         if (!inGame) {
             console.log("[AutoClick] Đang ở sảnh, click tìm bàn...");
@@ -37,7 +37,7 @@
         }
     }
 
-    // Hàm click tại toạ độ cụ thể
+    // 
     function clickAt(x, y) {
         const target = document.elementFromPoint(x, y);
         if (target) {
