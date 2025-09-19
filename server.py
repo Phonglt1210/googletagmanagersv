@@ -1,21 +1,18 @@
 #!/usr/bin/env python3
 # server.py
 """
-Fonsida simple file server for serving allowed JS files based on fingerprint+profile.
-Features:
-- Read fingerprint from query param `finger` (also accepts `key` for compatibility).
-- Read profile from query param `profile`.
-- Validate against allowkeys.txt entries in format: BASE64_FINGER|PROFILE
-- Whitelist allowed filenames to avoid path traversal / leaking server files.
-- Simple in-memory rate limiting per IP.
-- Basic logging.
+Fonsida file server with file-based expiry.
+allowkeys.txt lines format:
+    BASE64_FINGER|profile-name|expiry_epoch_seconds
+
+If current time >= expiry => key is invalid.
 """
 
 import os
 import time
 import logging
 from typing import List, Tuple
-from flask import Flask, request, send_from_directory, abort, jsonify
+from flask import Flask, request, send_from_directory, jsonify, make_response
 from flask_cors import CORS
 
 # ---------- Configuration ----------
@@ -25,7 +22,7 @@ ALLOWED_KEYS_PATH = os.path.join(BASE_DIR, "allowkeys.txt")
 # Files that client is allowed to request
 ALLOWED_FILES = set(os.environ.get("ALLOWED_FILES", "ttc.js,rd.js,rmrd.js").split(","))
 
-# Rate limiting (per IP)
+# Rate limiting (per IP) - optional lightweight
 MAX_REQ_PER_WINDOW = int(os.environ.get("MAX_REQ_PER_WINDOW", "120"))  # requests
 WINDOW_SECONDS = int(os.environ.get("RATE_WINDOW_SECONDS", "60"))      # seconds
 
@@ -43,12 +40,12 @@ CORS(app, resources={r"/*": {"origins": CORS_ORIGINS}})
 _rate_store = {}
 
 # ---------- Helpers ----------
-def load_allowed_keys() -> List[Tuple[str, str]]:
+def load_allowed_keys_with_exp() -> List[Tuple[str, str, int]]:
     """
     Read allowkeys.txt lines of form:
-      BASE64FINGER|profile_name
+      BASE64FINGER|profile_name|expiry_epoch
     Lines starting with # or blank lines are ignored.
-    Returns list of (finger, profile).
+    Returns list of (finger, profile, expiry).
     """
     if not os.path.exists(ALLOWED_KEYS_PATH):
         return []
@@ -59,25 +56,41 @@ def load_allowed_keys() -> List[Tuple[str, str]]:
                 line = raw.strip()
                 if not line or line.startswith("#"):
                     continue
-                parts = line.split("|", 1)
-                if len(parts) != 2:
+                parts = line.split("|")
+                # allow lines with >=3 parts; extra parts joined into last if any
+                if len(parts) < 3:
                     continue
                 finger = parts[0].strip()
                 profile = parts[1].strip()
-                if finger and profile:
-                    out.append((finger, profile))
+                # expiry may include extra '|' if present; join remaining parts
+                expiry_part = "|".join(parts[2:]).strip()
+                try:
+                    expiry = int(expiry_part)
+                except:
+                    expiry = 0
+                out.append((finger, profile, expiry))
     except Exception as e:
         logger.exception("Failed to load allowkeys.txt: %s", e)
     return out
 
 def is_valid_key(finger: str, profile: str) -> bool:
+    """
+    Validate that (finger, profile) exists and current time < expiry.
+    """
     if not finger or not profile:
         return False
-    # load and check
-    allowed = load_allowed_keys()
-    for saved_finger, saved_profile in allowed:
-        if finger == saved_finger and profile == saved_profile:
-            return True
+    now = int(time.time())
+    allowed = load_allowed_keys_with_exp()
+    for saved_finger, saved_profile, expiry in allowed:
+        if saved_profile != profile:
+            continue
+        # exact match for stored base64
+        if finger == saved_finger:
+            if expiry > now:
+                return True
+            else:
+                # expired
+                return False
     return False
 
 def check_rate_limit(client_ip: str) -> bool:
@@ -99,7 +112,6 @@ def check_rate_limit(client_ip: str) -> bool:
             _rate_store[client_ip][0] = count + 1
             return True
 
-# Optional housekeeping: prune old entries periodically (not strictly necessary)
 def _prune_rate_store():
     now = int(time.time())
     keys = list(_rate_store.keys())
@@ -119,7 +131,7 @@ def health():
 
 @app.route("/<path:filename>", methods=["GET"])
 def serve_file(filename):
-    # Basic pruning of rate store occasionally
+    # light prune occasionally
     try:
         _prune_rate_store()
     except Exception:
@@ -135,7 +147,7 @@ def serve_file(filename):
         logger.warning("Denied file request (not whitelisted) filename=%s ip=%s", filename, client_ip)
         return "❌ File not allowed", 403
 
-    # Accept either 'finger' or legacy 'key' query param for compatibility
+    # Accept 'finger' (preferred) or legacy 'key'
     finger = request.args.get("finger") or request.args.get("key")
     profile = request.args.get("profile")
 
@@ -144,28 +156,31 @@ def serve_file(filename):
                     client_ip, filename, str(finger)[:16] + ("..." if finger and len(finger) > 16 else ""), profile)
         return "❌ Missing fingerprint or profile", 400
 
-    # Trim whitespace
     finger = finger.strip()
     profile = profile.strip()
 
-    # Validate
+    # Validate using allowkeys.txt with expiry
     if not is_valid_key(finger, profile):
-        logger.info("Invalid access attempt ip=%s filename=%s finger=%s profile=%s",
+        logger.info("Invalid or expired access attempt ip=%s filename=%s finger=%s profile=%s",
                     client_ip, filename, (finger[:12] + "...") if len(finger) > 12 else finger, profile)
-        return "❌ Sai key hoặc profile không hợp lệ", 403
+        return "❌ Sai key hoặc profile không hợp lệ hoặc đã hết hạn", 403
 
-    # Serve file from BASE_DIR (safe because filename is whitelisted)
+    # Serve file and attach cache-control headers to avoid caching
     filepath = os.path.join(BASE_DIR, filename)
     if os.path.exists(filepath):
         logger.info("Serving file=%s to ip=%s profile=%s", filename, client_ip, profile)
-        return send_from_directory(BASE_DIR, filename)
+        resp = make_response(send_from_directory(BASE_DIR, filename))
+        # Prevent caching by browsers/CDNs (adjust if you use CDN)
+        resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        resp.headers['Pragma'] = 'no-cache'
+        resp.headers['Expires'] = '0'
+        return resp
     else:
         logger.warning("File not found: %s requested by ip=%s", filename, client_ip)
         return "❌ File not found", 404
 
-# ---------- CLI / run ----------
+# ---------- Run ----------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
-    # debug False for production; set FLASK_ENV or env var if needed
     logger.info("Starting Fonsida server on 0.0.0.0:%s", port)
     app.run(host="0.0.0.0", port=port, debug=False)
