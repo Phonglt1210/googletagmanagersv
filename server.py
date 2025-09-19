@@ -20,7 +20,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ALLOWED_KEYS_PATH = os.path.join(BASE_DIR, "allowkeys.txt")
 
 # Files that client is allowed to request
-ALLOWED_FILES = set(os.environ.get("ALLOWED_FILES", "ttc.js,rd.js,rmrd.js").split(","))
+ALLOWED_FILES = set(os.environ.get("ALLOWED_FILES", "ttc.js,atjr.js,rd.js,rmrd.js").split(","))
 
 # Rate limiting (per IP) - optional lightweight
 MAX_REQ_PER_WINDOW = int(os.environ.get("MAX_REQ_PER_WINDOW", "120"))  # requests
