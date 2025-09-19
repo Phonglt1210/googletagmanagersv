@@ -18,7 +18,7 @@
     let surrenderInterval = null;
     let chatOn = false;
     let iconOn = false;
-    let chatDelay = 4000;
+    let chatDelay = 15000;
     let surrenderDelay = 5000; // mặc định 5s
     let iconIndex = 0;
     let chatIndex = 0;
