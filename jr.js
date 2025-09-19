@@ -4,7 +4,7 @@
 // @version      1.0
 // @description  J R
 // @author       FonArt
-// @match        *://zigavn.com/*
+// @match        https://zigavn.com/*
 // @grant        none
 // ==/UserScript==
 
