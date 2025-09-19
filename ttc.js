@@ -19,7 +19,7 @@
     let chatOn = false;
     let iconOn = false;
     let chatDelay = 15000;
-    let surrenderDelay = 5000; // mặc định 5s
+    let surrenderDelay = 5000;
     let iconIndex = 0;
     let chatIndex = 0;
     let chatList = [];
