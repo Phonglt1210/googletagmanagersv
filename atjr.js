@@ -1,10 +1,10 @@
 // ==UserScript==
-// @name         atjr
+// @name         Auto Click Outside Game Room (Zigavn)
 // @namespace    http://tampermonkey.net/
 // @version      1.0
-// @description  J R
+// @description  Tự động click khi đang ở phòng chờ, không click nếu đang trong bàn chơi
 // @author       FonArt
-// @match        https://zigavn.com/*
+// @match        *://zigavn.com/*
 // @grant        none
 // ==/UserScript==
 
@@ -13,7 +13,7 @@
 
     let inGame = false;
 
-    //
+    // Hook logMessage để phát hiện vào/thoát bàn
     const originalLogMessage = window.logMessage;
     window.logMessage = function (msg) {
         if (msg.includes("ProcessGameTableInfo")) {
@@ -27,7 +27,7 @@
         return originalLogMessage.apply(this, arguments);
     };
 
-    // 
+    // Hàm tự động click khi không ở trong bàn
     function autoClickWhenIdle() {
         if (!inGame) {
             console.log("[AutoClick] Đang ở sảnh, click tìm bàn...");
@@ -37,7 +37,7 @@
         }
     }
 
-    // 
+    // Hàm click tại toạ độ cụ thể
     function clickAt(x, y) {
         const target = document.elementFromPoint(x, y);
         if (target) {
