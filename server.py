@@ -20,7 +20,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ALLOWED_KEYS_PATH = os.path.join(BASE_DIR, "allowkeys.txt")
 
 # hard-coded whitelist of files (from user's Tampermonkey)
-ALLOWED_FILES = {"ttc.js", "rd.js", "atjr.js", "rmrd.js"}
+ALLOWED_FILES = {"ttc.js", "rd.js", "atjr.js", "rmrd.js", "ard.js"}
 
 # rate limiting simple per-ip
 MAX_REQ_PER_WINDOW = int(os.environ.get("MAX_REQ_PER_WINDOW", "180"))  # requests
