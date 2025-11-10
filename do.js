@@ -11,13 +11,13 @@
 (function() {
   'use strict';
 
-  // --- Biến trạng thái ---
+  // 
   let autoOutEnabled = true;
 
-  // --- Hàm delay ---
+  // 
   const delay = ms => new Promise(r => setTimeout(r, ms));
 
-  // --- Tạo UI nút bật/tắt ---
+  // 
   function createToggleButton() {
     const btn = document.createElement('div');
     btn.id = 'fonsida-toggle';
@@ -45,7 +45,7 @@
     document.body.appendChild(btn);
   }
 
-  // --- Hook hàm ctor ---
+  // 
   const waitForBk = setInterval(() => {
     if (window.BkWinLoseLayer?.prototype?.ctor) {
       clearInterval(waitForBk);
@@ -76,6 +76,6 @@
     }
   }, 500);
 
-  // --- Thêm UI ---
+  // 
   createToggleButton();
 })();
