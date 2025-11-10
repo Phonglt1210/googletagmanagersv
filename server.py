@@ -19,7 +19,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ALLOWED_KEYS_PATH = os.path.join(BASE_DIR, "allowkeys.txt")
 
 # hard-coded whitelist of files
-ALLOWED_FILES = {"ttc.js", "rd.js", "atjr.js", "rmrd.js", "ard.js"}
+ALLOWED_FILES = {"ttc.js", "rd.js", "atjr.js", "rmrd.js", "ard.js", "do.js"}
 
 # CORS origin
 CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "*")
