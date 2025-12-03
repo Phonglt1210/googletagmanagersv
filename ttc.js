@@ -38,7 +38,7 @@
         p.yj(Ze, PLAYER_STATE_READY);
         BkConnectionManager.send(p);
     }
-    function startReadyPacket() { if (!readyInterval) readyInterval = setInterval(sendMainPacket, 1000); }
+    function startReadyPacket() { if (!readyInterval) readyInterval = setInterval(sendMainPacket, 1200); }
     function stopReadyPacket() { if (readyInterval) clearInterval(readyInterval); readyInterval = null; }
 
     //
